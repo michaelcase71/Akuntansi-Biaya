@@ -76,9 +76,10 @@ if (empty($data)) {
                                     </form>
                                 </div>
                             </div>
-                            <?php if ($_SESSION['level'] === "super admin") { ?>
-                                <button type="button" class="btn btn-primary mb-sm-2" data-bs-toggle="modal" data-bs-target="#insertModal">Tambah Data</button>
+                            <?php if (isset($_SESSION['level']) && $_SESSION['level'] === "super admin") { ?>
+                            <button type="button" class="btn btn-primary mb-sm-2" data-bs-toggle="modal" data-bs-target="#insertModal">Tambah Data</button>
                             <?php } ?>
+
 
                             <table id="datatable"
                                 class="table table-bordered dt-responsive nowrap w-100 table-striped table-hover text-center">

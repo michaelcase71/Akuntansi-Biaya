@@ -3,7 +3,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/ProjectTa/webservice/config.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/ProjectTa/lib/function.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/ProjectTa/pages/cetakhpp.php";
 
-
 // Ambil bulan dan tahun dari form
 $selectedMonth = isset($_POST['month']) ? $_POST['month'] : '';
 $selectedYear = isset($_POST['year']) ? $_POST['year'] : '';
@@ -14,29 +13,23 @@ $data = Tampil_Data("hpp");
 // Filter data berdasarkan bulan dan tahun
 if ($selectedMonth && $selectedYear) {
     $filteredData = array_filter($data, function ($item) use ($selectedMonth, $selectedYear) {
-        // Pastikan periode dalam format 'Y-m'
         $periode = DateTime::createFromFormat('Y-m', $item->periode);
-        if ($periode) { // Validasi format tanggal
-            return $periode->format('m') === $selectedMonth && $periode->format('Y') === $selectedYear;
-        }
-        return false; // Jika format salah, abaikan
+        return $periode && $periode->format('m') === $selectedMonth && $periode->format('Y') === $selectedYear;
     });
 } else {
-    $filteredData = $data; // Tampilkan semua data jika filter kosong
+    $filteredData = [];
 }
 ?>
-
 
 <div class="main-content">
     <div class="page-content">
         <div class="container-fluid">
-            <!-- Filter Form -->
             <div class="card">
                 <div class="card-header">
                     <h4 class="card-title font-size-18">Laporan Harga Pokok Produksi</h4>
                 </div>
                 <div class="card-body">
-                    <form method="POST">
+                    <form method="POST" id="filterForm">
                         <div class="row mb-4">
                             <div class="col-md-4">
                                 <select name="month" class="form-select">
@@ -51,7 +44,7 @@ if ($selectedMonth && $selectedYear) {
                             <div class="col-md-4">
                                 <select name="year" class="form-select">
                                     <option value="">Pilih Tahun</option>
-                                    <?php for ($y = date("Y") - 10; $y <= date("Y"); $y++) { ?>
+                                    <?php for ($y = date("Y") - 5; $y <= date("Y"); $y++) { ?>
                                         <option value="<?= $y ?>" <?= $selectedYear == $y ? 'selected' : '' ?>><?= $y ?></option>
                                     <?php } ?>
                                 </select>
@@ -63,7 +56,7 @@ if ($selectedMonth && $selectedYear) {
                         </div>
                     </form>
 
-                    <table id="datatable-custom" class="table table-bordered dt-responsive nowrap w-100 table-striped table-hover text-center">
+                    <table class="table table-bordered dt-responsive nowrap w-100 table-striped table-hover text-center">
                         <thead class="table-light">
                             <tr>
                                 <th>Nomor</th>
@@ -76,57 +69,51 @@ if ($selectedMonth && $selectedYear) {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php
-                            $no = 1;
-                            if (!empty($filteredData)) {
+                            <?php if (!empty($filteredData)) {
+                                $no = 1;
                                 foreach ($filteredData as $j) {
-                                    $tanggal = $j->periode;
-                                    $totalBahanBaku = $j->total_bahan_baku;
-                                    $totalTenagaKerja = $j->total_tenaga_kerja;
-                                    $totalOverhead = $j->total_overhead;
-                                    $totalBarangJadi = $j->total_barang_jadi;
-                                    $totalHpp = $j->total_hpp;
-                            ?>
+                                    ?>
                                     <tr>
                                         <td><?= $no++ ?></td>
-                                        <td><?= $tanggal ?></td>
-                                        <td><?= $totalBarangJadi ?></td>
-                                        <td class="text-end">Rp. <?= number_format($totalBahanBaku, 2, ',', '.') ?></td>
-                                        <td class="text-end">Rp. <?= number_format($totalTenagaKerja, 2, ',', '.') ?></td>
-                                        <td class="text-end">Rp. <?= number_format($totalOverhead, 2, ',', '.') ?></td>
-                                        <td class="text-end">Rp. <?= number_format($totalHpp, 2, ',', '.') ?></td>
+                                        <td><?= $j->periode ?></td>
+                                        <td><?= $j->total_barang_jadi ?></td>
+                                        <td class="text-end">Rp. <?= number_format($j->total_bahan_baku, 2, ',', '.') ?></td>
+                                        <td class="text-end">Rp. <?= number_format($j->total_tenaga_kerja, 2, ',', '.') ?></td>
+                                        <td class="text-end">Rp. <?= number_format($j->total_overhead, 2, ',', '.') ?></td>
+                                        <td class="text-end">Rp. <?= number_format($j->total_hpp, 2, ',', '.') ?></td>
                                     </tr>
-                            <?php
+                                    <?php
                                 }
                             } else {
                                 echo "<tr><td colspan='7' class='text-center'>Tidak ada data untuk bulan dan tahun yang dipilih.</td></tr>";
-                            }
-                            ?>
+                            } ?>
                         </tbody>
                     </table>
 
-
-                    <!-- Tombol Cetak -->
-                    <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#cetakModal">Cetak / Download PDF</button>
+                    <button id="printButton" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#cetakModal" disabled>Cetak / Download PDF</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-
-
-
 <script>
-    function printReport() {
-        var printContents = document.getElementById("printArea").innerHTML;
-        var originalContents = document.body.innerHTML;
+    document.addEventListener("DOMContentLoaded", function () {
+        var printButton = document.getElementById("printButton");
+        var filterForm = document.getElementById("filterForm");
 
-        document.body.innerHTML = printContents;
-        window.print();
-        document.body.innerHTML = originalContents;
+        function checkFilterStatus() {
+            if (sessionStorage.getItem("filterApplied") === "true") {
+                printButton.removeAttribute("disabled");
+            } else {
+                printButton.setAttribute("disabled", "disabled");
+            }
+        }
 
-        // Pastikan halaman direfresh setelah cetak untuk menghindari masalah rendering
-        window.location.reload();
-    }
+        filterForm.addEventListener("submit", function () {
+            sessionStorage.setItem("filterApplied", "true");
+        });
+
+        checkFilterStatus();
+    });
 </script>
