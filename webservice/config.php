@@ -1,6 +1,6 @@
 <?php
 // definisikan koneksi ke database
-$baseURL = "http://localhost/ProjectTa";
+$baseURL = "http://localhost/AkuntansiBiaya";
 $server = "localhost";
 $username = "root";
 $password = "";

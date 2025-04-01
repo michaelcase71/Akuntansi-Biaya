@@ -1,42 +1,37 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 
-$configPath = $_SERVER['DOCUMENT_ROOT'] . "/ProjectTa/webservice/config.php";
+$configPath = $_SERVER['DOCUMENT_ROOT'] . "/AkuntansiBiaya/webservice/config.php";
 if (file_exists($configPath)) {
     include $configPath;
 } else {
     die("Config file not found: " . $configPath);
 }
 
-$user = isset($_POST['username']) ? $_POST['username'] : '';
-$pass = isset($_POST['password']) ? $_POST['password'] : '';
-$login = isset($_POST['login']);
+$user = @$_POST['username'];
+$pass = @$_POST['password'];
+$login = @$_POST['login'];
 
-if ($login) {
-    $stmt = mysqli_prepare($koneksi, "SELECT id, level FROM user WHERE username = ? AND pass = ?");
-    mysqli_stmt_bind_param($stmt, "ss", $user, $pass);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $data = mysqli_fetch_assoc($result);
-    
-    if ($data) {
-        $_SESSION['user_id'] = $data['id'];
-        $_SESSION['level'] = $data['level']; // Simpan level pengguna
+if (isset($login)) {
+    $sql = mysqli_query($koneksi, "SELECT * FROM user WHERE username = '$user' AND pass = '$pass'") or die(mysqli_error($koneksi));
+    $data = mysqli_fetch_array($sql);
+    $cek = mysqli_num_rows($sql);
 
-        header("Location: index.php?link=dashboard");
-        exit();
+    if ($cek > 0) {
+        if ($data['level'] == "admin") {
+            $_SESSION['admin'] = $data['id'];
+            header("Location: index.php?link=dashboard");
+        } elseif ($data['level'] == "super admin") {
+            $_SESSION['manager'] = $data['id'];
+            header("Location: index.php?link=dashboard");
+        } elseif ($data['level'] == "accounting") {
+            $_SESSION['accounting'] = $data['id'];
+            header("Location: index.php?link=dashboard");
+        }
     } else {
-        echo "<script>alert('Username / password salah');window.location.href='index.php?link=login';</script>";
+        echo "<script type='text/javascript'>alert('Username / password salah');window.location.href='index.php?link=login';</script>";
     }
-    
-    mysqli_stmt_close($stmt);
 }
 ?>
-
-
-
 
 
 
